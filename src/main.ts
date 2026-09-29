@@ -1,5 +1,6 @@
 import { NestFactory } from '@nestjs/core';
 import { ValidationPipe } from '@nestjs/common';
+import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import { AppModule } from './app.module.js';
 
 async function bootstrap() {
@@ -14,6 +15,27 @@ async function bootstrap() {
   );
   app.enableCors({
     origin: process.env.FRONTEND_URL ?? 'http://localhost:5173',
+  });
+  const swaggerConfig = new DocumentBuilder()
+    .setTitle('Payments API')
+    .setDescription(
+      'API para autenticación, usuarios, roles y consulta de pagos.',
+    )
+    .setVersion('1.0')
+    .addBearerAuth(
+      {
+        type: 'http',
+        scheme: 'bearer',
+        bearerFormat: 'JWT',
+        description: 'Supabase access token',
+      },
+      'supabase-jwt',
+    )
+    .build();
+  const swaggerDocument = SwaggerModule.createDocument(app, swaggerConfig);
+  SwaggerModule.setup('api/docs', app, swaggerDocument, {
+    jsonDocumentUrl: 'api/docs/openapi.json',
+    customSiteTitle: 'Payments API Documentation',
   });
   await app.listen(Number(process.env.PORT ?? 3000));
 }
