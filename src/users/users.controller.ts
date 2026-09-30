@@ -6,6 +6,7 @@ import {
   Param,
   ParseUUIDPipe,
   Patch,
+  Post,
 } from '@nestjs/common';
 import {
   ApiBearerAuth,
@@ -20,6 +21,8 @@ import { CurrentUser } from '../auth/decorators/current-user.decorator.js';
 import { CurrentOrganization } from '../auth/decorators/current-organization.decorator.js';
 import { Permisos } from '../auth/decorators/permissions.decorator.js';
 import { UpdateRolePermissionDto } from './dto/update-role-permission.dto.js';
+import { CreateRoleDto } from './dto/create-role.dto.js';
+import { UpdateRoleDto } from './dto/update-role.dto.js';
 import { UpdateUserRoleDto } from './dto/update-user-role.dto.js';
 import { UsersService } from './users.service.js';
 
@@ -33,6 +36,63 @@ export class UsersController {
   @ApiOperation({ summary: 'Obtiene el perfil del usuario autenticado' })
   obtenerPerfil(@CurrentUser() usuario: User) {
     return this.usersService.obtenerPerfil(usuario);
+  }
+
+  @Permisos('roles:gestionar')
+  @Post('roles')
+  @ApiOperation({ summary: 'Crea un rol dinámico' })
+  @ApiBody({ type: CreateRoleDto })
+  crearRol(
+    @Body() datos: CreateRoleDto,
+    @CurrentOrganization() organizacionId: string,
+    @CurrentUser() usuarioActor: User,
+  ) {
+    return this.usersService.crearRol(usuarioActor.id, organizacionId, datos);
+  }
+
+  @Permisos('roles:gestionar')
+  @Get('roles')
+  @ApiOperation({ summary: 'Obtiene los roles disponibles' })
+  listarRoles(
+    @CurrentOrganization() organizacionId: string,
+    @CurrentUser() usuarioActor: User,
+  ) {
+    return this.usersService.listarRoles(usuarioActor.id, organizacionId);
+  }
+
+  @Permisos('roles:gestionar')
+  @Patch('roles/:rolId')
+  @ApiOperation({ summary: 'Actualiza la descripción de un rol' })
+  @ApiParam({ name: 'rolId', format: 'uuid' })
+  @ApiBody({ type: UpdateRoleDto })
+  actualizarRolCatalogo(
+    @Param('rolId', ParseUUIDPipe) rolId: string,
+    @Body() datos: UpdateRoleDto,
+    @CurrentOrganization() organizacionId: string,
+    @CurrentUser() usuarioActor: User,
+  ) {
+    return this.usersService.actualizarRolCatalogo(
+      usuarioActor.id,
+      organizacionId,
+      rolId,
+      datos,
+    );
+  }
+
+  @Permisos('roles:gestionar')
+  @Delete('roles/:rolId')
+  @ApiOperation({ summary: 'Elimina un rol dinámico' })
+  @ApiParam({ name: 'rolId', format: 'uuid' })
+  eliminarRol(
+    @Param('rolId', ParseUUIDPipe) rolId: string,
+    @CurrentOrganization() organizacionId: string,
+    @CurrentUser() usuarioActor: User,
+  ) {
+    return this.usersService.eliminarRol(
+      usuarioActor.id,
+      organizacionId,
+      rolId,
+    );
   }
 
   @Permisos('roles:gestionar')

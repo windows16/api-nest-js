@@ -1,14 +1,17 @@
-import { IsIn } from 'class-validator';
+import { IsString, Matches, MaxLength, MinLength } from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
-import { USER_ROLES, type UserRole } from '../../auth/types/user-role.js';
 
 export class UpdateUserRoleDto {
   @ApiProperty({
-    enum: USER_ROLES,
-    example: 'cobrador',
-    description: 'Rol de aplicación que se asignará al usuario.',
+    example: 'supervisor',
+    description: 'Nombre del rol existente que se asignará al usuario.',
     name: 'rol',
   })
-  @IsIn([...USER_ROLES])
-  rol!: UserRole;
+  @IsString()
+  @MinLength(2)
+  @MaxLength(50)
+  @Matches(/^[a-záéíóúñ0-9:_-]+$/i, {
+    message: 'El nombre del rol contiene caracteres no permitidos',
+  })
+  rol!: string;
 }

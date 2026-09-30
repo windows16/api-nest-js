@@ -1,5 +1,6 @@
 import {
   ForbiddenException,
+  ConflictException,
   Injectable,
   InternalServerErrorException,
   NotFoundException,
@@ -9,6 +10,12 @@ import { AuditService } from '../../audit/audit.service.js';
 import type { UserRole } from '../types/user-role.js';
 
 type RegistroRol = { id: string };
+const ROLES_PROTEGIDOS = new Set([
+  'usuario',
+  'gerente',
+  'administrador',
+  'auditor',
+]);
 
 @Injectable()
 export class AuthorizationService {
@@ -169,6 +176,145 @@ export class AuthorizationService {
       detalles: {
         rol,
       },
+    });
+  }
+
+  async crearRol(
+    usuarioActorId: string,
+    organizacionId: string,
+    nombre: string,
+    descripcion?: string,
+  ) {
+    await this.comprobarGestionDeRoles(usuarioActorId, organizacionId);
+
+    const { data, error } = await this.supabaseService.cliente
+      .from('roles')
+      .insert({ nombre, descripcion: descripcion ?? null })
+      .select('id, nombre, descripcion, creado_en')
+      .single();
+
+    if (error) {
+      if (error.code === '23505') {
+        throw new ConflictException('Ya existe un rol con ese nombre');
+      }
+      throw new InternalServerErrorException('No se pudo crear el rol');
+    }
+
+    await this.auditService.registrar({
+      usuarioId: usuarioActorId,
+      organizacionId,
+      accion: 'crear_rol',
+      recurso: 'roles',
+      recursoId: data.id,
+      detalles: { nombre },
+    });
+
+    return data;
+  }
+
+  async listarRoles(usuarioActorId: string, organizacionId: string) {
+    await this.comprobarGestionDeRoles(usuarioActorId, organizacionId);
+
+    const { data, error } = await this.supabaseService.cliente
+      .from('roles')
+      .select('id, nombre, descripcion, creado_en')
+      .order('nombre', { ascending: true });
+
+    if (error) {
+      throw new InternalServerErrorException('No se pudieron obtener los roles');
+    }
+
+    return data;
+  }
+
+  async actualizarRolCatalogo(
+    usuarioActorId: string,
+    organizacionId: string,
+    rolId: string,
+    descripcion?: string,
+  ) {
+    await this.comprobarGestionDeRoles(usuarioActorId, organizacionId);
+    const { data, error } = await this.supabaseService.cliente
+      .from('roles')
+      .update({ descripcion: descripcion ?? null })
+      .eq('id', rolId)
+      .select('id, nombre, descripcion, creado_en')
+      .maybeSingle();
+
+    if (error) {
+      throw new InternalServerErrorException('No se pudo actualizar el rol');
+    }
+    if (!data) {
+      throw new NotFoundException('Rol no encontrado');
+    }
+
+    await this.auditService.registrar({
+      usuarioId: usuarioActorId,
+      organizacionId,
+      accion: 'actualizar_rol',
+      recurso: 'roles',
+      recursoId: rolId,
+      detalles: { descripcion: descripcion ?? null },
+    });
+
+    return data;
+  }
+
+  async eliminarRol(
+    usuarioActorId: string,
+    organizacionId: string,
+    rolId: string,
+  ): Promise<void> {
+    await this.comprobarGestionDeRoles(usuarioActorId, organizacionId);
+
+    const { data: rol, error: errorRol } = await this.supabaseService.cliente
+      .from('roles')
+      .select('id, nombre')
+      .eq('id', rolId)
+      .maybeSingle();
+
+    if (errorRol) {
+      throw new InternalServerErrorException('No se pudo consultar el rol');
+    }
+    if (!rol) {
+      throw new NotFoundException('Rol no encontrado');
+    }
+    if (ROLES_PROTEGIDOS.has(rol.nombre)) {
+      throw new ConflictException('No se puede eliminar un rol del sistema');
+    }
+
+    const { count, error: errorMembresias } = await this.supabaseService.cliente
+      .from('miembros_organizacion')
+      .select('usuario_id', { count: 'exact', head: true })
+      .eq('rol_id', rolId);
+
+    if (errorMembresias) {
+      throw new InternalServerErrorException(
+        'No se pudo comprobar el uso del rol',
+      );
+    }
+    if ((count ?? 0) > 0) {
+      throw new ConflictException(
+        'No se puede eliminar un rol asignado a usuarios',
+      );
+    }
+
+    const { error } = await this.supabaseService.cliente
+      .from('roles')
+      .delete()
+      .eq('id', rolId);
+
+    if (error) {
+      throw new InternalServerErrorException('No se pudo eliminar el rol');
+    }
+
+    await this.auditService.registrar({
+      usuarioId: usuarioActorId,
+      organizacionId,
+      accion: 'eliminar_rol',
+      recurso: 'roles',
+      recursoId: rolId,
+      detalles: { nombre: rol.nombre },
     });
   }
 
