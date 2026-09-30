@@ -1,17 +1,55 @@
 import { Injectable } from '@nestjs/common';
 import type { User } from '@supabase/supabase-js';
-import { SupabaseAuthService } from '../auth/services/supabase-auth.service.js';
+import { AuthorizationService } from '../auth/services/authorization.service.js';
 import type { UserRole } from '../auth/types/user-role.js';
 
 @Injectable()
 export class UsersService {
-  constructor(private readonly supabaseAuthService: SupabaseAuthService) {}
+  constructor(private readonly authorizationService: AuthorizationService) {}
 
-  getProfile(user: User) {
-    return { user };
+  obtenerPerfil(usuario: User) {
+    return { usuario };
   }
 
-  updateRole(userId: string, role: UserRole) {
-    return this.supabaseAuthService.updateUserRole(userId, role);
+  actualizarRol(
+    usuarioActorId: string,
+    usuarioObjetivoId: string,
+    organizacionId: string,
+    rol: UserRole,
+  ) {
+    return this.authorizationService.asignarRol(
+      usuarioActorId,
+      usuarioObjetivoId,
+      organizacionId,
+      rol,
+    );
+  }
+
+  asignarPermiso(
+    usuarioActorId: string,
+    organizacionId: string,
+    rolId: string,
+    permisoId: string,
+  ) {
+    return this.authorizationService.asignarPermisoARol(
+      usuarioActorId,
+      organizacionId,
+      rolId,
+      permisoId,
+    );
+  }
+
+  retirarPermiso(
+    usuarioActorId: string,
+    organizacionId: string,
+    rolId: string,
+    permisoId: string,
+  ) {
+    return this.authorizationService.retirarPermisoDeRol(
+      usuarioActorId,
+      organizacionId,
+      rolId,
+      permisoId,
+    );
   }
 }

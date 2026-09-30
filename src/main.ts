@@ -17,7 +17,7 @@ async function bootstrap() {
     origin: process.env.FRONTEND_URL ?? 'http://localhost:5173',
   });
   const swaggerConfig = new DocumentBuilder()
-    .setTitle('Payments API')
+    .setTitle('API de Pagos')
     .setDescription(
       'API para autenticación, usuarios, roles y consulta de pagos.',
     )
@@ -27,7 +27,7 @@ async function bootstrap() {
         type: 'http',
         scheme: 'bearer',
         bearerFormat: 'JWT',
-        description: 'Supabase access token',
+        description: 'Token de acceso de Supabase',
       },
       'supabase-jwt',
     )
@@ -35,7 +35,7 @@ async function bootstrap() {
   const swaggerDocument = SwaggerModule.createDocument(app, swaggerConfig);
   SwaggerModule.setup('api/docs', app, swaggerDocument, {
     jsonDocumentUrl: 'api/docs/openapi.json',
-    customSiteTitle: 'Payments API Documentation',
+    customSiteTitle: 'Documentación de la API de Pagos',
   });
   await app.listen(Number(process.env.PORT ?? 3000));
 }

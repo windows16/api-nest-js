@@ -2,10 +2,11 @@ import { Injectable } from '@nestjs/common';
 
 @Injectable()
 export class PaymentsService {
-  findByUser(userId: string) {
+  buscarPorUsuario(usuarioId: string, organizacionId: string) {
     return {
-      userId,
-      payments: [],
+      usuarioId,
+      organizacionId,
+      pagos: [],
     };
   }
 }

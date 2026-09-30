@@ -5,9 +5,10 @@ import { USER_ROLES, type UserRole } from '../../auth/types/user-role.js';
 export class UpdateUserRoleDto {
   @ApiProperty({
     enum: USER_ROLES,
-    example: 'collector',
+    example: 'cobrador',
     description: 'Rol de aplicación que se asignará al usuario.',
+    name: 'rol',
   })
   @IsIn([...USER_ROLES])
-  role!: UserRole;
+  rol!: UserRole;
 }

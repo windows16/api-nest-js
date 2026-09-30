@@ -1,27 +1,24 @@
-import {
-  Injectable,
-  InternalServerErrorException,
-  NotFoundException,
-} from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { createClient, type SupabaseClient, type User } from '@supabase/supabase-js';
-import type { UserRole } from '../types/user-role.js';
 
 @Injectable()
 export class SupabaseAuthService {
   private readonly supabase: SupabaseClient;
 
-  constructor(configService: ConfigService) {
-    const supabaseUrl = configService.get<string>('SUPABASE_URL');
-    const serviceRoleKey = configService.get<string>('SUPABASE_SERVICE_ROLE_KEY');
+  constructor(servicioConfiguracion: ConfigService) {
+    const urlSupabase = servicioConfiguracion.get<string>('SUPABASE_URL');
+    const claveRolServicio = servicioConfiguracion.get<string>(
+      'SUPABASE_SERVICE_ROLE_KEY',
+    );
 
-    if (!supabaseUrl || !serviceRoleKey) {
+    if (!urlSupabase || !claveRolServicio) {
       throw new Error(
-        'SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY must be configured',
+        'SUPABASE_URL y SUPABASE_SERVICE_ROLE_KEY deben estar configuradas',
       );
     }
 
-    this.supabase = createClient(supabaseUrl, serviceRoleKey, {
+    this.supabase = createClient(urlSupabase, claveRolServicio, {
       auth: {
         autoRefreshToken: false,
         persistSession: false,
@@ -29,36 +26,14 @@ export class SupabaseAuthService {
     });
   }
 
-  async getUserByAccessToken(accessToken: string): Promise<User> {
-    const { data, error } = await this.supabase.auth.getUser(accessToken);
+  async obtenerUsuarioPorToken(tokenAcceso: string): Promise<User> {
+    const { data: datos, error: errorSupabase } =
+      await this.supabase.auth.getUser(tokenAcceso);
 
-    if (error || !data.user) {
-      throw error ?? new Error('Supabase did not return an authenticated user');
+    if (errorSupabase || !datos.user) {
+      throw errorSupabase ?? new Error('Supabase no devolvió un usuario autenticado');
     }
 
-    return data.user;
-  }
-
-  async updateUserRole(userId: string, role: UserRole): Promise<User> {
-    const existingUser = await this.supabase.auth.admin.getUserById(userId);
-    if (existingUser.error || !existingUser.data.user) {
-      throw new NotFoundException('User not found');
-    }
-
-    const { data, error } = await this.supabase.auth.admin.updateUserById(
-      userId,
-      {
-        app_metadata: {
-          ...existingUser.data.user.app_metadata,
-          role,
-        },
-      },
-    );
-
-    if (error || !data.user) {
-      throw new InternalServerErrorException('Unable to update user role');
-    }
-
-    return data.user;
+    return datos.user;
   }
 }

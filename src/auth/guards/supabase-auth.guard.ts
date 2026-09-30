@@ -31,22 +31,24 @@ export class SupabaseAuthGuard implements CanActivate {
       return true;
     }
 
-    const request = context.switchToHttp().getRequest<AuthenticatedRequest>();
-    const authorization = request.headers.authorization;
-    const [scheme, token, ...extraParts] = authorization?.trim().split(/\s+/) ?? [];
+    const solicitud =
+      context.switchToHttp().getRequest<AuthenticatedRequest>();
+    const autorizacion = solicitud.headers.authorization;
+    const [esquema, token, ...partesAdicionales] =
+      autorizacion?.trim().split(/\s+/) ?? [];
 
     if (
-      scheme?.toLowerCase() !== 'bearer' ||
+      esquema?.toLowerCase() !== 'bearer' ||
       !token ||
-      extraParts.length > 0
+      partesAdicionales.length > 0
     ) {
-      throw new UnauthorizedException('Missing or malformed bearer token');
+      throw new UnauthorizedException('Token Bearer ausente o mal formado');
     }
 
     try {
-      request.user = await this.authService.getUserByAccessToken(token);
+      solicitud.user = await this.authService.obtenerUsuarioPorToken(token);
     } catch {
-      throw new UnauthorizedException('Invalid access token');
+      throw new UnauthorizedException('Token de acceso inválido');
     }
 
     return true;

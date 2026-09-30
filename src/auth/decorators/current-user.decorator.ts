@@ -4,12 +4,13 @@ import type { AuthenticatedRequest } from '../guards/supabase-auth.guard.js';
 
 export const CurrentUser = createParamDecorator(
   (_data: unknown, context: ExecutionContext): User => {
-    const request = context.switchToHttp().getRequest<AuthenticatedRequest>();
+    const solicitud =
+      context.switchToHttp().getRequest<AuthenticatedRequest>();
 
-    if (!request.user) {
-      throw new Error('Authenticated user was not found');
+    if (!solicitud.user) {
+      throw new Error('No se encontró el usuario autenticado');
     }
 
-    return request.user;
+    return solicitud.user;
   },
 );
