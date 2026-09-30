@@ -109,6 +109,38 @@ export class AuthorizationService {
     return permisosRequeridos.every((permiso) => nombresPermiso.has(permiso));
   }
 
+  async obtenerOrganizacionDelUsuario(usuarioId: string): Promise<string> {
+    const { data, error } = await this.supabase
+      .from('miembros_organizacion')
+      .select('organizacion_id')
+      .eq('usuario_id', usuarioId)
+      .limit(2);
+
+    if (error) {
+      throw new InternalServerErrorException(
+        'No se pudo obtener la organización del usuario',
+      );
+    }
+
+    const organizaciones = [
+      ...new Set(data.map((registro) => registro.organizacion_id)),
+    ];
+
+    if (organizaciones.length === 0) {
+      throw new ForbiddenException(
+        'El usuario no pertenece a ninguna organización',
+      );
+    }
+
+    if (organizaciones.length > 1) {
+      throw new ForbiddenException(
+        'El usuario pertenece a más de una organización',
+      );
+    }
+
+    return organizaciones[0];
+  }
+
   async asignarRol(
     usuarioActorId: string,
     usuarioObjetivoId: string,

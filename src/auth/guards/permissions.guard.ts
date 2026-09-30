@@ -34,12 +34,9 @@ export class PermissionsGuard implements CanActivate {
       throw new ForbiddenException('Se requiere un usuario autenticado');
     }
 
-    const organizacionId = this.obtenerOrganizacionId(solicitud);
-    if (!organizacionId) {
-      throw new ForbiddenException(
-        'Se requiere la organización para validar permisos',
-      );
-    }
+    const organizacionId =
+      await this.authorizationService.obtenerOrganizacionDelUsuario(usuario.id);
+    solicitud.organizacionId = organizacionId;
 
     const tienePermisos = await this.authorizationService.usuarioTienePermisos(
       usuario.id,
@@ -52,20 +49,5 @@ export class PermissionsGuard implements CanActivate {
     }
 
     return true;
-  }
-
-  private obtenerOrganizacionId(
-    solicitud: AuthenticatedRequest,
-  ): string | undefined {
-    const organizacionDeRuta = solicitud.params?.organizacionId;
-    if (typeof organizacionDeRuta === 'string' && organizacionDeRuta) {
-      return organizacionDeRuta;
-    }
-
-    const organizacionDelEncabezado =
-      solicitud.headers['x-organizacion-id'];
-    return Array.isArray(organizacionDelEncabezado)
-      ? organizacionDelEncabezado[0]
-      : organizacionDelEncabezado;
   }
 }

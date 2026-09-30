@@ -11,13 +11,13 @@ import {
   ApiBearerAuth,
   ApiBody,
   ApiOperation,
-  ApiHeader,
   ApiParam,
   ApiResponse,
   ApiTags,
 } from '@nestjs/swagger';
 import type { User } from '@supabase/supabase-js';
 import { CurrentUser } from '../auth/decorators/current-user.decorator.js';
+import { CurrentOrganization } from '../auth/decorators/current-organization.decorator.js';
 import { Permisos } from '../auth/decorators/permissions.decorator.js';
 import { UpdateRolePermissionDto } from './dto/update-role-permission.dto.js';
 import { UpdateUserRoleDto } from './dto/update-user-role.dto.js';
@@ -29,7 +29,6 @@ import { UsersService } from './users.service.js';
 export class UsersController {
   constructor(private readonly usersService: UsersService) {}
 
-  @Permisos('usuarios:gestionar')
   @Get('/profile')
   @ApiOperation({ summary: 'Obtiene el perfil del usuario autenticado' })
   obtenerPerfil(@CurrentUser() usuario: User) {
@@ -37,27 +36,17 @@ export class UsersController {
   }
 
   @Permisos('roles:gestionar')
-  @Patch('organizaciones/:organizacionId/usuarios/:id/rol')
+  @Patch('usuarios/:id/rol')
   @ApiOperation({ summary: 'Actualiza el rol de un usuario' })
   @ApiParam({
     name: 'id',
     description: 'UUID del usuario objetivo.',
     format: 'uuid',
   })
-  @ApiParam({
-    name: 'organizacionId',
-    description: 'UUID de la organización.',
-    format: 'uuid',
-  })
-  @ApiHeader({
-    name: 'X-Organizacion-Id',
-    required: true,
-    description: 'UUID de la organización en la que se valida el rol.',
-  })
   @ApiBody({ type: UpdateUserRoleDto })
   actualizarRol(
     @Param('id', ParseUUIDPipe) usuarioId: string,
-    @Param('organizacionId', ParseUUIDPipe) organizacionId: string,
+    @CurrentOrganization() organizacionId: string,
     @Body() datosRol: UpdateUserRoleDto,
     @CurrentUser() usuarioActor: User,
   ) {
@@ -70,13 +59,8 @@ export class UsersController {
   }
 
   @Permisos('roles:gestionar')
-  @Patch('organizaciones/:organizacionId/roles/:rolId/permisos')
+  @Patch('roles/:rolId/permisos')
   @ApiOperation({ summary: 'Asigna un permiso a un rol' })
-  @ApiParam({
-    name: 'organizacionId',
-    description: 'UUID de la organización.',
-    format: 'uuid',
-  })
   @ApiParam({
     name: 'rolId',
     description: 'UUID del rol.',
@@ -85,8 +69,8 @@ export class UsersController {
   @ApiBody({ type: UpdateRolePermissionDto })
   @ApiResponse({ status: 204, description: 'Permiso asignado correctamente.' })
   asignarPermiso(
-    @Param('organizacionId', ParseUUIDPipe) organizacionId: string,
     @Param('rolId', ParseUUIDPipe) rolId: string,
+    @CurrentOrganization() organizacionId: string,
     @Body() datosPermiso: UpdateRolePermissionDto,
     @CurrentUser() usuarioActor: User,
   ) {
@@ -100,14 +84,9 @@ export class UsersController {
 
   @Permisos('roles:gestionar')
   @Delete(
-    'organizaciones/:organizacionId/roles/:rolId/permisos/:permisoId',
+    'roles/:rolId/permisos/:permisoId',
   )
   @ApiOperation({ summary: 'Retira un permiso de un rol' })
-  @ApiParam({
-    name: 'organizacionId',
-    description: 'UUID de la organización.',
-    format: 'uuid',
-  })
   @ApiParam({
     name: 'rolId',
     description: 'UUID del rol.',
@@ -120,9 +99,9 @@ export class UsersController {
   })
   @ApiResponse({ status: 204, description: 'Permiso retirado correctamente.' })
   retirarPermiso(
-    @Param('organizacionId', ParseUUIDPipe) organizacionId: string,
     @Param('rolId', ParseUUIDPipe) rolId: string,
     @Param('permisoId', ParseUUIDPipe) permisoId: string,
+    @CurrentOrganization() organizacionId: string,
     @CurrentUser() usuarioActor: User,
   ) {
     return this.usersService.retirarPermiso(

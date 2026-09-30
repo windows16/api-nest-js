@@ -12,6 +12,7 @@ import { SupabaseAuthService } from '../services/supabase-auth.service.js';
 
 export type AuthenticatedRequest = Request & {
   user?: User;
+  organizacionId?: string;
 };
 
 @Injectable()

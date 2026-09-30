@@ -34,16 +34,10 @@ export class RolesGuard implements CanActivate {
       throw new ForbiddenException('Se requiere un usuario autenticado');
     }
 
-    const organizacionId = solicitud.headers['x-organizacion-id'];
-    const organizacionIdNormalizada = Array.isArray(organizacionId)
-      ? organizacionId[0]
-      : organizacionId;
-
-    if (!organizacionIdNormalizada) {
-      throw new ForbiddenException(
-        'Se requiere el encabezado X-Organizacion-Id',
+    const organizacionIdNormalizada =
+      await this.authorizationService.obtenerOrganizacionDelUsuario(
+        usuario.id,
       );
-    }
 
     const tieneRol = await this.authorizationService.usuarioTieneRol(
       usuario.id,
