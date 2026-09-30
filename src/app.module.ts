@@ -2,7 +2,8 @@ import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { AppController } from './app.controller.js';
 import { AuthModule } from './auth/auth.module.js';
-import { PaymentsModule } from './payments/payments.module.js';
+import { AuditModule } from './audit/audit.module.js';
+import { DatabaseModule } from './database/database.module.js';
 import { UsersModule } from './users/users.module.js';
 
 @Module({
@@ -11,9 +12,10 @@ import { UsersModule } from './users/users.module.js';
       isGlobal: true,
       cache: true,
     }),
+    DatabaseModule,
     AuthModule,
     UsersModule,
-    PaymentsModule,
+    AuditModule,
   ],
   controllers: [AppController],
 })

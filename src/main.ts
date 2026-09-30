@@ -17,9 +17,9 @@ async function bootstrap() {
     origin: process.env.FRONTEND_URL ?? 'http://localhost:5173',
   });
   const swaggerConfig = new DocumentBuilder()
-    .setTitle('API de Pagos')
+    .setTitle('API de gestión y auditoría')
     .setDescription(
-      'API para autenticación, usuarios, roles y consulta de pagos.',
+      'API para autenticación, usuarios, roles y consulta de registros de auditoría.',
     )
     .setVersion('1.0')
     .addBearerAuth(
@@ -35,7 +35,7 @@ async function bootstrap() {
   const swaggerDocument = SwaggerModule.createDocument(app, swaggerConfig);
   SwaggerModule.setup('api/docs', app, swaggerDocument, {
     jsonDocumentUrl: 'api/docs/openapi.json',
-    customSiteTitle: 'Documentación de la API de Pagos',
+    customSiteTitle: 'Documentación de la API de gestión y auditoría',
   });
   await app.listen(Number(process.env.PORT ?? 3000));
 }

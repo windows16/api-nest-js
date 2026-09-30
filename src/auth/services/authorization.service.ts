@@ -4,39 +4,21 @@ import {
   InternalServerErrorException,
   NotFoundException,
 } from '@nestjs/common';
-import { ConfigService } from '@nestjs/config';
-import { createClient, type SupabaseClient } from '@supabase/supabase-js';
+import { SupabaseService } from '../../database/supabase.service.js';
 import type { UserRole } from '../types/user-role.js';
 
 type RegistroRol = { id: string };
 
 @Injectable()
 export class AuthorizationService {
-  private readonly supabase: SupabaseClient;
-
-  constructor(servicioConfiguracion: ConfigService) {
-    const urlSupabase = servicioConfiguracion.get<string>('SUPABASE_URL');
-    const serviceRolKey = servicioConfiguracion.get<string>(
-      'SUPABASE_SERVICE_ROLE_KEY',
-    );
-
-    if (!urlSupabase || !serviceRolKey) {
-      throw new Error(
-        'SUPABASE_URL y SUPABASE_SERVICE_ROLE_KEY deben estar configuradas',
-      );
-    }
-
-    this.supabase = createClient(urlSupabase, serviceRolKey, {
-      auth: { autoRefreshToken: false, persistSession: false },
-    });
-  }
+  constructor(private readonly supabaseService: SupabaseService) {}
 
   async usuarioTieneRol(
     usuarioId: string,
     organizacionId: string,
     rolesRequeridos: readonly UserRole[],
   ): Promise<boolean> {
-    const { data: datos, error: errorSupabase } = await this.supabase
+    const { data: datos, error: errorSupabase } = await this.supabaseService.cliente
       .from('miembros_organizacion')
       .select('rol:roles!inner(nombre)')
       .eq('usuario_id', usuarioId)
@@ -58,7 +40,7 @@ export class AuthorizationService {
     organizacionId: string,
     permisosRequeridos: readonly string[],
   ): Promise<boolean> {
-    const { data: datosMembresia, error: errorMembresia } = await this.supabase
+    const { data: datosMembresia, error: errorMembresia } = await this.supabaseService.cliente
       .from('miembros_organizacion')
       .select('rol_id')
       .eq('usuario_id', usuarioId)
@@ -76,7 +58,7 @@ export class AuthorizationService {
     }
 
     const { data: datosRolPermiso, error: errorRolPermiso } =
-      await this.supabase
+      await this.supabaseService.cliente
         .from('roles_permisos')
         .select('permiso_id')
         .in('rol_id', idsRol);
@@ -92,7 +74,7 @@ export class AuthorizationService {
       return false;
     }
 
-    const { data: datosPermiso, error: errorPermiso } = await this.supabase
+    const { data: datosPermiso, error: errorPermiso } = await this.supabaseService.cliente
       .from('permisos')
       .select('nombre')
       .in('id', idsPermiso);
@@ -110,7 +92,7 @@ export class AuthorizationService {
   }
 
   async obtenerOrganizacionDelUsuario(usuarioId: string): Promise<string> {
-    const { data, error } = await this.supabase
+    const { data, error } = await this.supabaseService.cliente
       .from('miembros_organizacion')
       .select('organizacion_id')
       .eq('usuario_id', usuarioId)
@@ -149,7 +131,7 @@ export class AuthorizationService {
   ): Promise<void> {
     await this.comprobarGestionDeRoles(usuarioActorId, organizacionId);
 
-    const { data: registroRol, error: errorRol } = await this.supabase
+    const { data: registroRol, error: errorRol } = await this.supabaseService.cliente
       .from('roles')
       .select('id')
       .eq('nombre', rol)
@@ -159,7 +141,7 @@ export class AuthorizationService {
       throw new NotFoundException('Rol no encontrado');
     }
 
-    const { error: errorActualizacion } = await this.supabase
+    const { error: errorActualizacion } = await this.supabaseService.cliente
       .from('miembros_organizacion')
       .upsert(
         {
@@ -189,7 +171,7 @@ export class AuthorizationService {
         'Permiso no encontrado',
       );
 
-      const { error } = await this.supabase.from('roles_permisos').upsert(
+      const { error } = await this.supabaseService.cliente.from('roles_permisos').upsert(
         { rol_id: rolId, permiso_id: permisoId },
         { onConflict: 'rol_id,permiso_id' },
       );
@@ -209,7 +191,7 @@ export class AuthorizationService {
     ): Promise<void> {
       await this.comprobarGestionDeRoles(usuarioActorId, organizacionId);
 
-      const { error } = await this.supabase
+      const { error } = await this.supabaseService.cliente
         .from('roles_permisos')
         .delete()
         .eq('rol_id', rolId)
@@ -242,7 +224,7 @@ export class AuthorizationService {
       id: string,
       mensaje: string,
     ): Promise<void> {
-      const { data, error } = await this.supabase
+      const { data, error } = await this.supabaseService.cliente
         .from(tabla)
         .select('id')
         .eq('id', id)
