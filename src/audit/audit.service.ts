@@ -16,9 +16,37 @@ type RegistroAuditoria = {
   creado_en: string;
 };
 
+export type DatosRegistroAuditoria = {
+  usuarioId: string;
+  organizacionId: string;
+  accion: string;
+  recurso: string;
+  recursoId?: string;
+  detalles?: Record<string, unknown>;
+};
+
 @Injectable()
 export class AuditService {
   constructor(private readonly supabaseService: SupabaseService) {}
+
+  async registrar(datos: DatosRegistroAuditoria): Promise<void> {
+    const { error } = await this.supabaseService.cliente
+      .from('registros_auditoria')
+      .insert({
+        usuario_id: datos.usuarioId,
+        organizacion_id: datos.organizacionId,
+        accion: datos.accion,
+        recurso: datos.recurso,
+        recurso_id: datos.recursoId ?? null,
+        detalles: datos.detalles ?? {},
+      });
+
+    if (error) {
+      throw new InternalServerErrorException(
+        'No se pudo registrar la operación en auditoría',
+      );
+    }
+  }
 
   normalizarLimite(valor?: string): number {
     if (valor === undefined) {

@@ -5,13 +5,17 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { SupabaseService } from '../../database/supabase.service.js';
+import { AuditService } from '../../audit/audit.service.js';
 import type { UserRole } from '../types/user-role.js';
 
 type RegistroRol = { id: string };
 
 @Injectable()
 export class AuthorizationService {
-  constructor(private readonly supabaseService: SupabaseService) {}
+  constructor(
+    private readonly supabaseService: SupabaseService,
+    private readonly auditService: AuditService,
+  ) {}
 
   async usuarioTieneRol(
     usuarioId: string,
@@ -155,6 +159,17 @@ export class AuthorizationService {
     if (errorActualizacion) {
       throw new InternalServerErrorException('No se pudo asignar el rol');
     }
+
+    await this.auditService.registrar({
+      usuarioId: usuarioActorId,
+      organizacionId,
+      accion: 'asignar_rol',
+      recurso: 'miembros_organizacion',
+      recursoId: usuarioObjetivoId,
+      detalles: {
+        rol,
+      },
+    });
   }
 
   async asignarPermisoARol(
@@ -181,6 +196,17 @@ export class AuthorizationService {
           'No se pudo asignar el permiso al rol',
         );
       }
+
+      await this.auditService.registrar({
+        usuarioId: usuarioActorId,
+        organizacionId,
+        accion: 'asignar_permiso',
+        recurso: 'roles_permisos',
+        recursoId: rolId,
+        detalles: {
+          permisoId,
+        },
+      });
     }
 
   async retirarPermisoDeRol(
@@ -202,6 +228,17 @@ export class AuthorizationService {
           'No se pudo retirar el permiso del rol',
         );
       }
+
+      await this.auditService.registrar({
+        usuarioId: usuarioActorId,
+        organizacionId,
+        accion: 'retirar_permiso',
+        recurso: 'roles_permisos',
+        recursoId: rolId,
+        detalles: {
+          permisoId,
+        },
+      });
     }
 
   private async comprobarGestionDeRoles(
